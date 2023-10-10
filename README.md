@@ -37,15 +37,18 @@ Telegram: [algolutionhk](https://t.me/algolutionhk)
 LinkedIn: [Algolution HK](https://www.linkedin.com/company/algolutionhk/)  
 Email: [algolutionhk@gmail.com](mailto:algolutionhk@gmail.com)
 
-## Reference
-CNN-LSTM: https://link.springer.com/article/10.1007/s00530-021-00758-w
-Directional LSTM: https://ieeexplore.ieee.org/abstract/document/7966019
-Stacked: https://link.springer.com/article/10.1007/s13042-019-01041-1 
+## Library Used
+scikit-learn, yfinance, technical-indicators, statsmodels, keras 
 
-Bi-LSTM: https://ieeexplore.ieee.org/abstract/document/8355458
-Bi-LSTM: https://ieeexplore.ieee.org/abstract/document/9257950 
+## Reference
+CNN-LSTM: https://link.springer.com/article/10.1007/s00530-021-00758-w  
+Directional LSTM: https://ieeexplore.ieee.org/abstract/document/7966019  
+Stacked: https://link.springer.com/article/10.1007/s13042-019-01041-1  
+
+Bi-LSTM: https://ieeexplore.ieee.org/abstract/document/8355458  
+Bi-LSTM: https://ieeexplore.ieee.org/abstract/document/9257950  
 
 Multivariate LSTM: 
-https://www.kaggle.com/code/bagavathypriya/multivariate-time-series-analysis-using-lstm
-https://www.kaggle.com/code/pauldavid22/multivariate-time-series-using-lstms
+https://www.kaggle.com/code/bagavathypriya/multivariate-time-series-analysis-using-lstm  
+https://www.kaggle.com/code/pauldavid22/multivariate-time-series-using-lstms  
 https://www.kaggle.com/code/nikitricky/multivariate-multi-step-time-series-forecasting 
