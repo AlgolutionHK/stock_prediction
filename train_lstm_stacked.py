@@ -168,186 +168,166 @@ STEP = 1
 
 
 
-for ticker in tickers:
+# for ticker in tickers:
 
-    # df = YahooDailyReader(ticker, start='2018-01-01', end=datetime.now())
-    df = yf.download(ticker, start=start_date, end=end_date, auto_adjust=False)
-    # df = StockDataFrame.retype(df)
+# df = YahooDailyReader(ticker, start='2018-01-01', end=datetime.now())
+ticker = stock_tickers[0]
+df = yf.download(ticker, start=start_date, end=end_date, auto_adjust=False)
+df = StockDataFrame.retype(df)
 
 
 
-    features_considered = ['Close','High','Low']
-    features = df[features_considered]
-    features.index = df.index
-    # features.head()
+features_considered = ['close','atr']
+features = df[features_considered]
+features.index = df.index
+# features.head()
 
-    # features.plot(subplots=True,figsize=[12,10])
+# features.plot(subplots=True,figsize=[12,10])
 
-    # Assuming your dataframe is called 'df' with columns 'column1', 'column2', 'column3'
-    columns_to_normalize = ['Close','High','Low']
+# Assuming your dataframe is called 'df' with columns 'column1', 'column2', 'column3'
+columns_to_normalize = ['close','atr']
 
-    # Create an instance of MinMaxScaler
-    scaler = MinMaxScaler()
+# Create an instance of MinMaxScaler
+scaler = MinMaxScaler()
 
-    # Fit the scaler on the selected columns
-    scaler.fit(features[columns_to_normalize])
+# Fit the scaler on the selected columns
+scaler.fit(features[columns_to_normalize])
 
-    # Transform the selected columns using the scaler
-    features[columns_to_normalize] = scaler.transform(features[columns_to_normalize])
+# Transform the selected columns using the scaler
+features[columns_to_normalize] = scaler.transform(features[columns_to_normalize])
 
-    dataset = features.values
+dataset = features.values
 
 # Define the function to create the LSTM model
-# def create_model(learning_rate=0.001, lstm_size=int(64), dropout_rate=0.3, evaluation_step=10):
-#     # Input layer
-#     input_layer = Input(shape=x_train_multi.shape[-2:])
+def create_model(learning_rate=0.001, lstm_size=int(32), dropout_rate=0.3, evaluation_step=10):
+    multi_step_model = tf.keras.models.Sequential()
+    multi_step_model.add(tf.keras.layers.LSTM(lstm_size,
+                                            return_sequences=True,
+                                            recurrent_dropout=0.3,
+                                            input_shape=x_train_multi.shape[-2:]))
+    multi_step_model.add(tf.keras.layers.Dropout(0.4))
+    multi_step_model.add(Dense(lstm_size/2))
 
-#     # LSTM branch for opening price prediction 
-#     lstm_branch_1 = LSTM(256)(input_layer)
-#     lstm_branch_1_dropout = Dropout(0.3)(lstm_branch_1)
-#     highest_price_output = Dense(1, activation='linear', name='highest_price')(lstm_branch_1_dropout)
+    multi_step_model.add(tf.keras.layers.LSTM(lstm_size/2,recurrent_dropout=0.3))
+    multi_step_model.add(tf.keras.layers.Dropout(0.4))
+    multi_step_model.add(Dense(lstm_size/4))
 
-#     # LSTM branch for lowest price prediction
-#     lstm_branch_2 = LSTM(128)(input_layer) 
-#     lstm_branch_2_dropout = Dropout(0.3)(lstm_branch_2)
-#     lowest_price_input = concatenate([highest_price_output, lstm_branch_2_dropout])
-#     lowest_price_output = Dense(1, activation='linear', name='lowest_price')(lowest_price_input)
-
-#     # LSTM branch for highest price prediction
-#     lstm_branch_3 = LSTM(64)(input_layer)
-#     lstm_branch_3_dropout = Dropout(0.3)(lstm_branch_3)
-#     close_price_input = concatenate([highest_price_output, lowest_price_output, lstm_branch_3_dropout])
-#     close_price_output = Dense(1, activation='sigmoid', name='close_price')(close_price_input)
-
-#     # Define the model
-#     model = Model(inputs=input_layer, outputs=[close_price_output])
-
-#     model.compile(optimizer=tf.keras.optimizers.legacy.Adam(),loss='binary_crossentropy', metrics='binary_accuracy')
-
-#     return model
-
-# param_grid = {
-#     'batch_size': [128,64],
-#     'learning_rate': [0.0005],
-#     # 'epochs': [50, 100, 150],
-#     'evaluation_step': [30],
-#     'lstm_size': [512]
-# }
-
-    # Hyperparameters
-    batch_size = 128
-    BUFFER_SIZE = 10000
-    TRAIN_SPLIT = int(df.shape[0] * 0.8)
+    multi_step_model.add(Dense(1,activation='linear'))
 
 
 
-    # Reproducibility
-    SEED = 42
-    tf.random.set_seed(SEED)
+    multi_step_model.compile(optimizer=tf.keras.optimizers.legacy.Nadam(learning_rate=0.001),loss='mae', metrics='accuracy')
+
+    return model
+
+param_grid = {
+    'batch_size': [128,64,32],
+    'learning_rate': [0.0001,0.0005,0.001],
+    # 'epochs': [50, 100, 150],
+    'evaluation_step': [10,20,30],
+    'lstm_size': [32,64,128]
+}
+
+# Hyperparameters
+batch_size = 128
+BUFFER_SIZE = 10000
+TRAIN_SPLIT = int(df.shape[0] * 0.8)
 
 
-    x_train_multi, y_train_multi = multivariate_data(dataset, dataset[:, 2], 0,
-                                                    TRAIN_SPLIT, past_history,
-                                                    future_target, STEP)
-    x_val_multi, y_val_multi = multivariate_data(dataset, dataset[:, 2],
-                                                TRAIN_SPLIT, None, past_history,
+
+# Reproducibility
+SEED = 42
+tf.random.set_seed(SEED)
+
+
+x_train_multi, y_train_multi = multivariate_data(dataset, dataset[:, 0], 0,
+                                                TRAIN_SPLIT, past_history,
                                                 future_target, STEP)
+x_val_multi, y_val_multi = multivariate_data(dataset, dataset[:, 0],
+                                            TRAIN_SPLIT, None, past_history,
+                                            future_target, STEP)
 
-    # LSTM Parameters
-    EPOCHS = 50
-    PATIENCE = 5
+# LSTM Parameters
+EPOCHS = 50
+PATIENCE = 5
 
-    EVALUATION_INTERVAL = len(x_train_multi)//batch_size//2 #15
-    VALIDATION_INTERVAL = len(x_val_multi)//batch_size//2
+EVALUATION_INTERVAL = len(x_train_multi)//batch_size//2 #15
+VALIDATION_INTERVAL = len(x_val_multi)//batch_size//2
 
-    train_data_multi = tf.data.Dataset.from_tensor_slices((x_train_multi, y_train_multi))
-    train_data_multi = train_data_multi.cache().shuffle(BUFFER_SIZE).batch(batch_size).repeat()
-
-    val_data_multi = tf.data.Dataset.from_tensor_slices((x_val_multi, y_val_multi))
-    val_data_multi = val_data_multi.batch(batch_size).repeat()
-
-
-
-    input_layer = Input(shape=x_train_multi.shape[-2:])
-
-    # # LSTM branch for opening price prediction
-    lstm_branch_1 = LSTM(8, return_sequences=True)(input_layer)
-    lstm_branch_1_dropout1 = Dropout(0.3)(lstm_branch_1)
-    lstm_branch_1_layer2 = LSTM(4)(lstm_branch_1_dropout1)
-    lstm_branch_1_dropout2 = Dropout(0.3)(lstm_branch_1_layer2)
-    highest_price_output = Dense(1, activation='linear', name='highest_price')(lstm_branch_1_dropout2)
-
-    # LSTM branch for lowest price prediction
-    lstm_branch_2 = LSTM(16, return_sequences=True)(input_layer)
-    lstm_branch_2_dropout1 = Dropout(0.3)(lstm_branch_2)
-    lstm_branch_2_layer2 = LSTM(8)(lstm_branch_2_dropout1)
-    lstm_branch_2_dropout2 = Dropout(0.3)(lstm_branch_2_layer2)
-    lowest_price_input = concatenate([highest_price_output, lstm_branch_2_dropout2])
-    lowest_price_output = Dense(1, activation='linear', name='lowest_price')(lowest_price_input)
-
-    # LSTM branch for highest price prediction
-    lstm_branch_3 = LSTM(32, return_sequences=True)(input_layer)
-    lstm_branch_3_dropout1 = Dropout(0.3)(lstm_branch_3)
-    lstm_branch_3_layer2 = LSTM(16)(lstm_branch_3_dropout1)
-    lstm_branch_3_dropout2 = Dropout(0.3)(lstm_branch_3_layer2)
-    close_price_input = concatenate([highest_price_output, lowest_price_output, lstm_branch_3_dropout2])
-    close_price_output = Dense(1, activation='linear', name='close_price')(close_price_input)
-
-    # Define the model
-    model = Model(inputs=input_layer, outputs=[close_price_output])
-
-    model.compile(optimizer=tf.keras.optimizers.legacy.Adam(),loss='mae', metrics='accuracy')
-
-
-    # print(model.summary())
-
-
-    early_stopping = EarlyStopping(monitor='val_loss', patience = 5, restore_best_weights=True)
-    multi_step_history = model.fit(train_data_multi,
-                                            epochs=EPOCHS,
-                                            steps_per_epoch=EVALUATION_INTERVAL,
-                                            validation_data=val_data_multi,
-                                            validation_steps=VALIDATION_INTERVAL,
-                                            callbacks=[early_stopping])
-
-    
-    model.save(f'model/stacked_model_{ticker}.h5')
-
-
-
-
-
-
-
-
-
-# x_val_multi, y_val_multi = multivariate_data(dataset, dataset[:, 2],
-#                                              TRAIN_SPLIT, None, past_history,
-#                                              future_target, STEP)
-
-# x_val_multi = x_val_multi[-20:]
-# y_val_multi = y_val_multi[-20:]
+# train_data_multi = tf.data.Dataset.from_tensor_slices((x_train_multi, y_train_multi))
+# train_data_multi = train_data_multi.cache().shuffle(BUFFER_SIZE).batch(batch_size).repeat()
 
 # val_data_multi = tf.data.Dataset.from_tensor_slices((x_val_multi, y_val_multi))
-
-# val_data_multi = val_data_multi.batch(batch_size)#.repeat()
-
-# for x, y in val_data_multi.take(1):
-#     multi_step_plot(x[0], y[0], multi_step_model.predict(x)[0])
+# val_data_multi = val_data_multi.batch(batch_size).repeat()
 
 
+    # multi_step_model = tf.keras.models.Sequential()
+    # multi_step_model.add(tf.keras.layers.LSTM(32,
+    #                                         return_sequences=True,
+    #                                         recurrent_dropout=0.3,
+    #                                         input_shape=x_train_multi.shape[-2:]))
+    # multi_step_model.add(tf.keras.layers.Dropout(0.4))
+    # multi_step_model.add(Dense(16))
 
-# # Create the KerasRegressor wrapper 
-# model = KerasRegressor(build_fn=create_model, lstm_size=[512], learning_rate=[0.0005], evaluation_step=[30])
+    # multi_step_model.add(tf.keras.layers.LSTM(16,recurrent_dropout=0.3))
+    # multi_step_model.add(tf.keras.layers.Dropout(0.4))
+    # multi_step_model.add(Dense(8))
 
-# # Perform randomized search
-# random_search = RandomizedSearchCV(estimator=model, param_distributions=param_grid, refit=True,n_jobs=8,cv=5, random_state=0, error_score='raise', return_train_score=True)  
-# random_search.fit(x_train_multi, y_train_multi)   
-# print(np.shape(x_train_multi),np.shape(x_train_multi))
+    # multi_step_model.add(Dense(1,activation='linear'))
 
-# # Print best results
-# print("Best Hyperparameters: ", random_search.best_params_)
-# print("Best Score: ", random_search.best_score_)
+
+
+    # multi_step_model.compile(optimizer=tf.keras.optimizers.legacy.Nadam(learning_rate=0.001),loss='mae', metrics='accuracy')
+    # print(multi_step_model.summary())
+
+
+    # # print(model.summary())
+
+
+    # early_stopping = EarlyStopping(monitor='val_loss', patience = 5, restore_best_weights=True)
+    # multi_step_history = model.fit(train_data_multi,
+    #                                         epochs=EPOCHS,
+    #                                         steps_per_epoch=EVALUATION_INTERVAL,
+    #                                         validation_data=val_data_multi,
+    #                                         validation_steps=VALIDATION_INTERVAL,
+    #                                         callbacks=[early_stopping])
+
+    
+    # model.save(f'model/stacked_model_{ticker}.h5')
+
+
+
+
+
+
+
+
+
+x_val_multi, y_val_multi = multivariate_data(dataset, dataset[:, 0],
+                                             TRAIN_SPLIT, None, past_history,
+                                             future_target, STEP)
+
+x_val_multi = x_val_multi[-20:]
+y_val_multi = y_val_multi[-20:]
+
+val_data_multi = tf.data.Dataset.from_tensor_slices((x_val_multi, y_val_multi))
+
+val_data_multi = val_data_multi.batch(batch_size)#.repeat()
+
+
+
+
+# Create the KerasRegressor wrapper 
+model = KerasRegressor(build_fn=create_model, lstm_size=[32], learning_rate=[0.0005], evaluation_step=[30])
+
+# Perform randomized search
+random_search = RandomizedSearchCV(estimator=model, param_distributions=param_grid, refit=True,n_jobs=8,cv=5, random_state=0, error_score='raise', return_train_score=True)  
+random_search.fit(x_train_multi, y_train_multi)   
+print(np.shape(x_train_multi),np.shape(x_train_multi))
+
+# Print best results
+print("Best Hyperparameters: ", random_search.best_params_)
+print("Best Score: ", random_search.best_score_)
 
 
 # #256 0.001 20 0.4

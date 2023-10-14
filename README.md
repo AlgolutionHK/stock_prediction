@@ -48,7 +48,7 @@ Stacked: https://link.springer.com/article/10.1007/s13042-019-01041-1
 Bi-LSTM: https://ieeexplore.ieee.org/abstract/document/8355458  
 Bi-LSTM: https://ieeexplore.ieee.org/abstract/document/9257950  
 
-Multivariate LSTM: 
+Multivariate LSTM:  
 https://www.kaggle.com/code/bagavathypriya/multivariate-time-series-analysis-using-lstm  
 https://www.kaggle.com/code/pauldavid22/multivariate-time-series-using-lstms  
 https://www.kaggle.com/code/nikitricky/multivariate-multi-step-time-series-forecasting 
