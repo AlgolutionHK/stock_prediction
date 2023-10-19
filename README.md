@@ -23,8 +23,8 @@
 
 ## multivariate_multistep_lstm_20231006.ipynb
 - Two layer LSTM (32),(16)
-- Close, macd, macds
-- Result: Low accuracy
+- Close, atr
+- Result: No significant improvement on current model
 
 ## multivariate_multistep_var_20231006.ipynb
 - VAR
